@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/botonFiltro"
+        android:icon="@drawable/filtro"
+        android:iconTint="#FFFFFF"
+        android:orderInCategory="100"
+        android:title="Ir a filtros"
+        app:showAsAction="always" />
+</menu>
