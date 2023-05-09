@@ -20,8 +20,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 
 import retrofit2.Call;
@@ -70,43 +72,74 @@ public class MainActivity extends AppCompatActivity implements Callback<Facturas
     public void onResponse(Call<FacturasResponse> call, Response<FacturasResponse> response) {
         if (response.isSuccessful()) {
             List<FacturasVO> facturas = response.body().getFacturas();
-            try {
-                String valor = facturas.toString();
-                JSONArray arreglo = new JSONArray(valor);
-                for (int f = 0; f < arreglo.length(); f++) {
-                    JSONObject objeto = new JSONObject(arreglo.get(f).toString());
-                    String descEstado = objeto.getString("descEstado");
-                    String importeOrdenacion = (objeto.getString("importeOrdenacion"));
-                    String fecha = objeto.getString("fecha");
-                    FacturasVO factura = new FacturasVO(descEstado, importeOrdenacion, fecha);
-                    facturas.add(factura);
 
-                }
-                maxImporte = Double.valueOf(facturas.stream().max(Comparator.comparing(FacturasVO::getImporteOrdenacion)).get().getImporteOrdenacion());
+            boolean checkBoxPagadas = getIntent().getBooleanExtra("Pagada", false);
+            boolean checkBoxPagadas2 = getIntent().getBooleanExtra("Pendiente de pago", false);
+            boolean checkBoxPagadas3 = getIntent().getBooleanExtra("Anulada", false);
+            boolean checkBoxPagadas4 = getIntent().getBooleanExtra("Cuota Fija", false);
+            boolean checkBoxPagadas5 = getIntent().getBooleanExtra("Plan de pago", false);
+            //checkbox
 
-                Bundle extras = getIntent().getExtras();
+            if (checkBoxPagadas || checkBoxPagadas2 || checkBoxPagadas3 || checkBoxPagadas4 || checkBoxPagadas5) {
+                ArrayList<FacturasVO> listFiltro2 = new ArrayList<>();
 
-                if (extras != null) {
-                    ArrayList<FacturasVO> listFiltro = new ArrayList<>();
-
-                    double importeFiltro = getIntent().getDoubleExtra("importe", maxImporte);
-
-                    for (FacturasVO factura : facturas) {
-                        if (Double.parseDouble(factura.getImporteOrdenacion()) < importeFiltro) {
-                            listFiltro.add(factura);
-                        }
+                for (FacturasVO factura : facturas) {
+                    if (factura.getDescEstado().equals("Pagada") && checkBoxPagadas) {
+                        listFiltro2.add(factura);
                     }
-
-                    adapter = new FacturasAdapter(facturas);
-                    rv1.setAdapter(adapter);
-
-
+                    if (factura.getDescEstado().equals("Pendiente de pago") && checkBoxPagadas2) {
+                        listFiltro2.add(factura);
+                    }
+                    if (factura.getDescEstado().equals("Anulada") && checkBoxPagadas3) {
+                        listFiltro2.add(factura);
+                    }
+                    if (factura.getDescEstado().equals("Cuota Fija") && checkBoxPagadas4) {
+                        listFiltro2.add(factura);
+                    }
+                    if (factura.getDescEstado().equals("Plan de pago") && checkBoxPagadas5) {
+                        listFiltro2.add(factura);
+                    }
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
 
-
+                facturas = listFiltro2;
             }
+
+            if (!getIntent().getStringExtra("fechaDesde").equals("dia/mes/año") && !getIntent().getStringExtra("fechaHasta").equals("dia/mes/año")) {
+                ArrayList<FacturasVO> facturasFiltradas = new ArrayList<>();
+
+
+                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                Date fechaDesde = null;
+                Date fechaHasta = null;
+
+                try {
+                    fechaDesde = sdf.parse(getIntent().getStringExtra("fechaDesde"));
+                    fechaHasta = sdf.parse(getIntent().getStringExtra("fechaHasta"));
+
+
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+                for (FacturasVO factura : facturas) {
+                    Date fechaFactura = null;
+                    try {
+                        fechaFactura = sdf.parse(factura.getFecha());
+                    } catch (ParseException e) {
+                        throw new RuntimeException(e);
+                    }
+                    if (fechaFactura.after(fechaDesde) && fechaFactura.before(fechaHasta)) {
+                        facturasFiltradas.add(factura);
+                    }
+                }
+
+                facturas = facturasFiltradas;
+            }
+
+            adapter = new FacturasAdapter(facturas);
+            rv1.setAdapter(adapter);
+
+            maxImporte = Double.valueOf(facturas.stream().max(Comparator.comparing(FacturasVO::getImporteOrdenacion)).get().getImporteOrdenacion());
+
         }
     }
 
