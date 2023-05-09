@@ -8,12 +8,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import com.example.facturas3.io.ApiAdapter;
 import com.example.facturas3.io.response.FacturasResponse;
+import com.google.gson.Gson;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,11 +32,13 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity implements Callback<FacturasResponse> {
+public class MainActivity extends AppCompatActivity {
+
 
     private FacturasAdapter adapter;
     private RecyclerView rv1;
-    public static Double maxImporte = 0.0;
+    private ArrayList<FacturasVO> facturas;
+    public static int maxImporte;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,12 +46,8 @@ public class MainActivity extends AppCompatActivity implements Callback<Facturas
         setContentView(R.layout.activity_main);
 
         rv1 = findViewById(R.id.rv1);
-
-        Call<FacturasResponse> call = ApiAdapter.getApiService().getFacturas();
-        call.enqueue(this);
-
         //boton para ir a la pagina de filtros
-        MenuHost menu=this;
+        MenuHost menu = this;
         menu.addMenuProvider(new MenuProvider() {
             @Override
             public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
@@ -56,96 +56,81 @@ public class MainActivity extends AppCompatActivity implements Callback<Facturas
 
             @Override
             public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
-                switch (menuItem.getItemId()){
-                    case R.id.botonFiltro:
-                        Intent intent=new Intent(MainActivity.this,FiltrosActivity.class);
-                        startActivity(intent);
-                        return true;
+                if (menuItem.getItemId() == R.id.botonFiltro) {
+                    Intent intent = new Intent(MainActivity.this, FiltrosActivity.class);
+                    intent.putExtra("facturas", facturas);
+                    intent.putExtra("maxImporte", maxImporte);
+                    startActivity(intent);
+                    return true;
+                } else {
+                    return false;
                 }
-                return false;
+            }
+
+        });
+
+        Call<FacturasResponse> call = ApiAdapter.getApiService().getFacturas();
+        call.enqueue(new Callback<FacturasResponse>() {
+            @Override
+            public void onResponse(Call<FacturasResponse> call, Response<FacturasResponse> response) {
+                if (response.isSuccessful()) {
+                    Log.d("facturas cargadas", response.body().getFacturas().toString());
+
+                    facturas = (ArrayList<FacturasVO>) response.body().getFacturas();
+                    maxImporte = calcularMaximoImporte(facturas);
+
+                    String datosFiltro = getIntent().getStringExtra(Constantes.FILTRO_DATOS);
+                    if (datosFiltro != null) {
+                        facturas = llenarDatos(datosFiltro);
+                    }
+                    adapter = new FacturasAdapter(facturas);
+                    rv1.setAdapter(adapter);
+
+                }
+
+
+            }
+
+
+            @Override
+            public void onFailure(Call<FacturasResponse> call, Throwable t) {
+                Log.d("onFailure", "Fallo callback de enqueue");//metodo vacio
             }
         });
     }
 
+    private int calcularMaximoImporte(ArrayList<FacturasVO> listaFactura) {
+        int maxImporte = 0;
 
-    @Override
-    public void onResponse(Call<FacturasResponse> call, Response<FacturasResponse> response) {
-        if (response.isSuccessful()) {
-            List<FacturasVO> facturas = response.body().getFacturas();
-
-            boolean checkBoxPagadas = getIntent().getBooleanExtra("Pagada", false);
-            boolean checkBoxPagadas2 = getIntent().getBooleanExtra("Pendiente de pago", false);
-            boolean checkBoxPagadas3 = getIntent().getBooleanExtra("Anulada", false);
-            boolean checkBoxPagadas4 = getIntent().getBooleanExtra("Cuota Fija", false);
-            boolean checkBoxPagadas5 = getIntent().getBooleanExtra("Plan de pago", false);
-            //checkbox
-
-            if (checkBoxPagadas || checkBoxPagadas2 || checkBoxPagadas3 || checkBoxPagadas4 || checkBoxPagadas5) {
-                ArrayList<FacturasVO> listFiltro2 = new ArrayList<>();
-
-                for (FacturasVO factura : facturas) {
-                    if (factura.getDescEstado().equals("Pagada") && checkBoxPagadas) {
-                        listFiltro2.add(factura);
-                    }
-                    if (factura.getDescEstado().equals("Pendiente de pago") && checkBoxPagadas2) {
-                        listFiltro2.add(factura);
-                    }
-                    if (factura.getDescEstado().equals("Anulada") && checkBoxPagadas3) {
-                        listFiltro2.add(factura);
-                    }
-                    if (factura.getDescEstado().equals("Cuota Fija") && checkBoxPagadas4) {
-                        listFiltro2.add(factura);
-                    }
-                    if (factura.getDescEstado().equals("Plan de pago") && checkBoxPagadas5) {
-                        listFiltro2.add(factura);
-                    }
-                }
-
-                facturas = listFiltro2;
+        for (FacturasVO factura : facturas) {
+            double maxFactura = factura.getImporteOrdenacion();
+            if (maxImporte < maxFactura) {
+                maxImporte = (int) Math.ceil(maxFactura);
             }
-
-            if (!getIntent().getStringExtra("fechaDesde").equals("dia/mes/año") && !getIntent().getStringExtra("fechaHasta").equals("dia/mes/año")) {
-                ArrayList<FacturasVO> facturasFiltradas = new ArrayList<>();
-
-
-                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-                Date fechaDesde = null;
-                Date fechaHasta = null;
-
-                try {
-                    fechaDesde = sdf.parse(getIntent().getStringExtra("fechaDesde"));
-                    fechaHasta = sdf.parse(getIntent().getStringExtra("fechaHasta"));
-
-
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-                for (FacturasVO factura : facturas) {
-                    Date fechaFactura = null;
-                    try {
-                        fechaFactura = sdf.parse(factura.getFecha());
-                    } catch (ParseException e) {
-                        throw new RuntimeException(e);
-                    }
-                    if (fechaFactura.after(fechaDesde) && fechaFactura.before(fechaHasta)) {
-                        facturasFiltradas.add(factura);
-                    }
-                }
-
-                facturas = facturasFiltradas;
-            }
-
-            adapter = new FacturasAdapter(facturas);
-            rv1.setAdapter(adapter);
-
-            maxImporte = Double.valueOf(facturas.stream().max(Comparator.comparing(FacturasVO::getImporteOrdenacion)).get().getImporteOrdenacion());
-
         }
+        return maxImporte;
     }
 
-    @Override
-    public void onFailure(Call<FacturasResponse> call, Throwable t) {
+    private ArrayList<FacturasVO> llenarDatos(String datosFiltro) {
+        FiltroVO filtros = new Gson().fromJson(datosFiltro, FiltroVO.class);
+        ArrayList<FacturasVO> filtroLista = new ArrayList<>();
 
+    //Metodos creados para filtrar la lista -->
+
+    //Meto en el filtro las fechas
+
+        //filtroLista = comprobarFecha(filtros.getFechaInicio(), filtros.getFechaFin());
+        comprobarSeekBar(filtros.getMaxImporte(), filtroLista);
+        return filtroLista;
+    }
+
+    private void comprobarSeekBar(int maxImporte, ArrayList<FacturasVO> filtroLista) {
+        for (FacturasVO facturaSeekBar :facturas){
+            if (Double.parseDouble(String.valueOf(facturaSeekBar.getImporteOrdenacion())) < maxImporte){
+                filtroLista.add(facturaSeekBar);
+            }
+        }
+        Log.d("filtroLista", filtroLista.toString());
     }
 
 }

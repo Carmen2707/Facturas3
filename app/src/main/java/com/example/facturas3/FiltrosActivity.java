@@ -89,9 +89,7 @@ public class FiltrosActivity extends AppCompatActivity {
         SeekBar seekBar = findViewById(R.id.seekBar);
         TextView maximo = findViewById(R.id.maximo);
         TextView central = findViewById(R.id.central);
-
-
-        int maxImporte = MainActivity.maxImporte.intValue() + 1;
+        int maxImporte = getIntent().getIntExtra("maxImporte", 0);
         seekBar.setMax(maxImporte);
         seekBar.setProgress(maxImporte);
         maximo.setText(String.valueOf(maxImporte));
@@ -130,15 +128,18 @@ public class FiltrosActivity extends AppCompatActivity {
                 Gson gson = new Gson();
                 Intent intent=new Intent(FiltrosActivity.this,MainActivity.class);
                 HashMap<String, Boolean> mapaCheckBox = new HashMap<>();
-                intent.putExtra("importe", Double.parseDouble(central.getText().toString()));
-                intent.putExtra("Pagada", checkPagadas.isChecked());
-                intent.putExtra("Anulada", checkAnuladas.isChecked());
-                intent.putExtra("Cuota Fija", checkCuota.isChecked());
-                intent.putExtra("Pendiente de pago", checkPendientes.isChecked());
-                intent.putExtra("Plan de pago", checkPlan.isChecked());
-                intent.putExtra("fechaDesde", botonDesde.getText().toString());
-                intent.putExtra("fechaHasta", botonHasta.getText().toString());
+              //  intent.putExtra("importe", Double.parseDouble(central.getText().toString()));
+                mapaCheckBox.put("Pagada", checkPagadas.isChecked());
+                mapaCheckBox.put("Anulada", checkAnuladas.isChecked());
+                mapaCheckBox.put("Cuota Fija", checkCuota.isChecked());
+                mapaCheckBox.put("Pendiente de pago", checkPendientes.isChecked());
+                mapaCheckBox.put("Plan de pago", checkPlan.isChecked());
+                //intent.putExtra("fechaDesde", botonDesde.getText().toString());
+               // intent.putExtra("fechaHasta", botonHasta.getText().toString());
 
+                FiltroVO filtroEnviado = new FiltroVO(botonDesde.getText().toString(), botonHasta.getText().toString(),maxImporte, mapaCheckBox);
+
+                intent.putExtra("filtro", gson.toJson(filtroEnviado));
                 startActivity(intent);
             }
         });
