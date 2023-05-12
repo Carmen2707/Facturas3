@@ -9,14 +9,16 @@ public class FiltroVO {
     private String fechaInicio;
     private String fechaFin;
     //Esta variable para la seekbar
+    private int importeSeleccionado;
     private int maxImporte;
     //Este mapa para los valores de las checkbox
     private HashMap<String, Boolean> mapaCheckBox = new HashMap<>();
 
-    public FiltroVO(String fechaInicio, String fechaFin, int maxImporte, HashMap<String, Boolean> mapaCheckBox) {
+    public FiltroVO(String fechaInicio, String fechaFin, int maxImporte, int importeSeleccionado, HashMap<String, Boolean> mapaCheckBox) {
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
         this.maxImporte = maxImporte;
+        this.importeSeleccionado = importeSeleccionado;
         this.mapaCheckBox = mapaCheckBox;
     }
 
@@ -42,6 +44,14 @@ public class FiltroVO {
 
     public void setMaxImporte(int maxImporte) {
         this.maxImporte = maxImporte;
+    }
+
+    public int getImporteSeleccionado() {
+        return importeSeleccionado;
+    }
+
+    public void setImporteSeleccionado(int importeSeleccionado) {
+        this.importeSeleccionado = importeSeleccionado;
     }
 
     public HashMap<String, Boolean> getMapaCheckBox() {

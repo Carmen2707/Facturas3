@@ -12,21 +12,20 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 
 import com.example.facturas3.io.ApiAdapter;
 import com.example.facturas3.io.response.FacturasResponse;
 import com.google.gson.Gson;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -34,11 +33,11 @@ import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-
     private FacturasAdapter adapter;
     private RecyclerView rv1;
     private ArrayList<FacturasVO> facturas;
     public static int maxImporte;
+    TextView filtroVacio;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +45,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         rv1 = findViewById(R.id.rv1);
+        filtroVacio=findViewById(R.id.filtroVacio);
+
         //boton para ir a la pagina de filtros
         MenuHost menu = this;
         menu.addMenuProvider(new MenuProvider() {
@@ -114,23 +115,82 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<FacturasVO> llenarDatos(String datosFiltro) {
         FiltroVO filtros = new Gson().fromJson(datosFiltro, FiltroVO.class);
         ArrayList<FacturasVO> filtroLista = new ArrayList<>();
+        
 
-    //Metodos creados para filtrar la lista -->
+        filtroLista = filtroSeekBar(filtros.getImporteSeleccionado());
+        if(!Objects.equals(filtros.getFechaInicio(), getBaseContext().getResources().getString(R.string.activity_filtros_botonFecha)) ||
+                !Objects.equals(filtros.getFechaFin(), getBaseContext().getResources().getString(R.string.activity_filtros_botonFecha))) {
+            filtroLista = filtroFecha(filtros.getFechaInicio(), filtros.getFechaFin(), filtroLista);
+        }
+        
+        
+        boolean estaCheckeado=false;
+        for (Map.Entry<String,Boolean> entry : filtros.getMapaCheckBox().entrySet()){
+            if (Boolean.TRUE.equals(entry.getValue())){
+                estaCheckeado=true;
+                break;
+            }
+        }
+        if (estaCheckeado){
+            filtroLista= filtroCheckBox(filtros.getMapaCheckBox(),filtroLista);
+        }
+        if(filtroLista.isEmpty()){
 
-    //Meto en el filtro las fechas
-
-        //filtroLista = comprobarFecha(filtros.getFechaInicio(), filtros.getFechaFin());
-        comprobarSeekBar(filtros.getMaxImporte(), filtroLista);
+            filtroVacio.setVisibility(View.VISIBLE);
+        }
         return filtroLista;
     }
 
-    private void comprobarSeekBar(int maxImporte, ArrayList<FacturasVO> filtroLista) {
-        for (FacturasVO facturaSeekBar :facturas){
-            if (Double.parseDouble(String.valueOf(facturaSeekBar.getImporteOrdenacion())) < maxImporte){
-                filtroLista.add(facturaSeekBar);
+    private ArrayList<FacturasVO> filtroCheckBox(HashMap<String, Boolean> mapaCheckBox, ArrayList<FacturasVO> filtroLista) {
+        ArrayList<FacturasVO> listaAux = new ArrayList<>();
+        for (FacturasVO factura: filtroLista) {
+            String descEstado = factura.getDescEstado();
+            if (mapaCheckBox.containsKey(descEstado) && Boolean.TRUE.equals(mapaCheckBox.get(descEstado))) {
+                listaAux.add(factura);
             }
         }
-        Log.d("filtroLista", filtroLista.toString());
+        return listaAux;
     }
 
+
+    private ArrayList<FacturasVO> filtroSeekBar(int maxImporte) {
+        ArrayList<FacturasVO> listaAux = new ArrayList<>();
+        for (FacturasVO facturaSeekBar : facturas){
+            if (Double.parseDouble(String.valueOf(facturaSeekBar.getImporteOrdenacion())) < maxImporte){
+                listaAux.add(facturaSeekBar);
+            }
+        }
+        return listaAux;
+    }
+
+
+    //filtrar fechas
+    private ArrayList<FacturasVO> filtroFecha(String fechaInicio, String fechaFin, ArrayList<FacturasVO> filtroLista) {
+
+        ArrayList<FacturasVO> listaAux = new ArrayList<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyyy");
+        Date fechaDesde = new Date();
+        Date fechaHasta = new Date();
+
+            try {
+                fechaDesde = sdf.parse(fechaInicio);
+                fechaHasta = sdf.parse(fechaFin);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+
+            for (FacturasVO facturaFecha: filtroLista) {
+                Date fechaFactura;
+                try {
+                    fechaFactura = sdf.parse(facturaFecha.getFecha());
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+                if (fechaFactura.after(fechaDesde) && fechaFactura.before(fechaHasta)) {
+                    listaAux.add(facturaFecha);
+                }
+            }
+
+        return listaAux;
+    }
 }
