@@ -32,8 +32,8 @@ public class FiltrosActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_filtros);
         ArrayList<FacturasVO> listaFactura = pasarListaFacturas();
-      
-        //boton de cerrar la pagina de filtros
+
+        //boton para cerrar la pagina de filtros y volver a la principal
         MenuHost menu = this;
         menu.addMenuProvider(new MenuProvider() {
             @Override
@@ -43,21 +43,29 @@ public class FiltrosActivity extends AppCompatActivity {
 
             @Override
             public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
-                switch (menuItem.getItemId()) {
-                    case R.id.botonCerrar:
-                        Intent intent = new Intent(FiltrosActivity.this, MainActivity.class);
-                        startActivity(intent);
-                        return true;
+                if (menuItem.getItemId() == R.id.botonCerrar) {
+                    Intent intent = new Intent(FiltrosActivity.this, MainActivity.class);
+                    startActivity(intent);
+                    return true;
                 }
                 return false;
             }
         });
 
+        //declarar variables
+        Button botonAplicar=(Button) findViewById(R.id.botonAplicar);
+        CheckBox checkPagadas = findViewById(R.id.checkPagadas);
+        CheckBox checkAnuladas = findViewById(R.id.checkAnuladas);
+        CheckBox checkCuota = findViewById(R.id.checkCuota);
+        CheckBox checkPendientes = findViewById(R.id.checkPendientes);
+        CheckBox checkPlan = findViewById(R.id.checkPlan);
+        Button botonDesde= (Button) findViewById(R.id.fechaDesde);
+        Button botonHasta=(Button) findViewById(R.id.fechaHasta);
+
+
 
         //calendarios
-        Button fechaDesde = (Button) findViewById(R.id.fechaDesde);
-        Button fechaHasta = (Button) findViewById(R.id.fechaHasta);
-        fechaDesde.setOnClickListener(new View.OnClickListener() {
+        botonDesde.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 final Calendar c = Calendar.getInstance();
@@ -65,12 +73,12 @@ public class FiltrosActivity extends AppCompatActivity {
                 int month = c.get(Calendar.MONTH);
                 int day = c.get(Calendar.DAY_OF_MONTH);
                 DatePickerDialog dpd = new DatePickerDialog(FiltrosActivity.this, (view, year1, monthofyear, dayofmonth) ->
-                        fechaDesde.setText(dayofmonth + "/" + (monthofyear + 1) + "/" + year1), year, month, day);
+                        botonDesde.setText(dayofmonth + "/" + (monthofyear + 1) + "/" + year1), year, month, day);
                 dpd.show();
             }
 
         });
-        fechaHasta.setOnClickListener(new View.OnClickListener() {
+        botonHasta.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 final Calendar c = Calendar.getInstance();
@@ -78,7 +86,7 @@ public class FiltrosActivity extends AppCompatActivity {
                 int month = c.get(Calendar.MONTH);
                 int day = c.get(Calendar.DAY_OF_MONTH);
                 DatePickerDialog dpd = new DatePickerDialog(FiltrosActivity.this, (view, year1, monthofyear, dayofmonth) ->
-                        fechaHasta.setText(dayofmonth + "/" + (monthofyear + 1) + "/" + year1), year, month, day);
+                        botonHasta.setText(dayofmonth + "/" + (monthofyear + 1) + "/" + year1), year, month, day);
                 dpd.show();
             }
         });
@@ -112,16 +120,7 @@ public class FiltrosActivity extends AppCompatActivity {
             }
         });
 
-        //botonAplicar
-        Button botonAplicar=(Button) findViewById(R.id.botonAplicar);
-        CheckBox checkPagadas = findViewById(R.id.checkPagadas);
-        CheckBox checkAnuladas = findViewById(R.id.checkAnuladas);
-        CheckBox checkCuota = findViewById(R.id.checkCuota);
-        CheckBox checkPendientes = findViewById(R.id.checkPendientes);
-        CheckBox checkPlan = findViewById(R.id.checkPlan);
-        Button botonDesde= (Button) findViewById(R.id.fechaDesde);
-        Button botonHasta=(Button) findViewById(R.id.fechaHasta);
-
+        //boton aplicar
         botonAplicar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -134,7 +133,8 @@ public class FiltrosActivity extends AppCompatActivity {
                 mapaCheckBox.put("Pendiente de pago", checkPendientes.isChecked());
                 mapaCheckBox.put("Plan de pago", checkPlan.isChecked());
 
-                FiltroVO filtroEnviado = new FiltroVO(botonDesde.getText().toString(), botonHasta.getText().toString(),maxImporte, Integer.parseInt(central.getText().toString()), mapaCheckBox);
+                FiltroVO filtroEnviado = new FiltroVO(botonDesde.getText().toString(), botonHasta.getText().toString(),
+                        maxImporte, Integer.parseInt(central.getText().toString()), mapaCheckBox);
 
                 intent.putExtra("filtro", gson.toJson(filtroEnviado));
                 startActivity(intent);
@@ -147,8 +147,8 @@ public class FiltrosActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 //fecha
-                fechaDesde.setText(R.string.activity_filtros_botonFecha);
-                fechaHasta.setText(R.string.activity_filtros_botonFecha);
+                botonDesde.setText(R.string.activity_filtros_botonFecha);
+                botonHasta.setText(R.string.activity_filtros_botonFecha);
 
                 //importe
                 seekBar.setMax(maxImporte);
@@ -164,14 +164,11 @@ public class FiltrosActivity extends AppCompatActivity {
             }
         });
     }
-
+//metodo para pasar la lista
     private ArrayList<FacturasVO> pasarListaFacturas() {
         ArrayList<FacturasVO> listaFacturas = getIntent().getParcelableArrayListExtra("facturas");
         Log.d("tamaño facturas", "" + listaFacturas.size());
-
         return listaFacturas;
     }
-
-    //checkboxs
 
 }

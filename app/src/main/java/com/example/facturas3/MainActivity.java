@@ -32,7 +32,6 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
-
     private FacturasAdapter adapter;
     private RecyclerView rv1;
     private ArrayList<FacturasVO> facturas;
@@ -45,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         rv1 = findViewById(R.id.rv1);
-        filtroVacio=findViewById(R.id.filtroVacio);
+        filtroVacio = findViewById(R.id.filtroVacio);
 
         //boton para ir a la pagina de filtros
         MenuHost menu = this;
@@ -70,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+
         Call<FacturasResponse> call = ApiAdapter.getApiService().getFacturas();
         call.enqueue(new Callback<FacturasResponse>() {
             @Override
@@ -88,8 +88,6 @@ public class MainActivity extends AppCompatActivity {
                     rv1.setAdapter(adapter);
 
                 }
-
-
             }
 
 
@@ -114,36 +112,37 @@ public class MainActivity extends AppCompatActivity {
 
     private ArrayList<FacturasVO> llenarDatos(String datosFiltro) {
         FiltroVO filtros = new Gson().fromJson(datosFiltro, FiltroVO.class);
-        ArrayList<FacturasVO> filtroLista = new ArrayList<>();
-        
+        ArrayList<FacturasVO> filtroLista;
+
 
         filtroLista = filtroSeekBar(filtros.getImporteSeleccionado());
-        if(!Objects.equals(filtros.getFechaInicio(), getBaseContext().getResources().getString(R.string.activity_filtros_botonFecha)) ||
+        if (!Objects.equals(filtros.getFechaInicio(), getBaseContext().getResources().getString(R.string.activity_filtros_botonFecha)) ||
                 !Objects.equals(filtros.getFechaFin(), getBaseContext().getResources().getString(R.string.activity_filtros_botonFecha))) {
             filtroLista = filtroFecha(filtros.getFechaInicio(), filtros.getFechaFin(), filtroLista);
         }
-        
-        
-        boolean estaCheckeado=false;
-        for (Map.Entry<String,Boolean> entry : filtros.getMapaCheckBox().entrySet()){
-            if (Boolean.TRUE.equals(entry.getValue())){
-                estaCheckeado=true;
+
+
+        boolean estaCheckeado = false;
+        for (Map.Entry<String, Boolean> entry : filtros.getMapaCheckBox().entrySet()) {
+            if (Boolean.TRUE.equals(entry.getValue())) {
+                estaCheckeado = true;
                 break;
             }
         }
-        if (estaCheckeado){
-            filtroLista= filtroCheckBox(filtros.getMapaCheckBox(),filtroLista);
+        if (estaCheckeado) {
+            filtroLista = filtroCheckBox(filtros.getMapaCheckBox(), filtroLista);
         }
-        if(filtroLista.isEmpty()){
+        if (filtroLista.isEmpty()) {
 
             filtroVacio.setVisibility(View.VISIBLE);
         }
         return filtroLista;
     }
 
+    //filtrar estado
     private ArrayList<FacturasVO> filtroCheckBox(HashMap<String, Boolean> mapaCheckBox, ArrayList<FacturasVO> filtroLista) {
         ArrayList<FacturasVO> listaAux = new ArrayList<>();
-        for (FacturasVO factura: filtroLista) {
+        for (FacturasVO factura : filtroLista) {
             String descEstado = factura.getDescEstado();
             if (mapaCheckBox.containsKey(descEstado) && Boolean.TRUE.equals(mapaCheckBox.get(descEstado))) {
                 listaAux.add(factura);
@@ -152,11 +151,11 @@ public class MainActivity extends AppCompatActivity {
         return listaAux;
     }
 
-
+    // filtrar importe
     private ArrayList<FacturasVO> filtroSeekBar(int maxImporte) {
         ArrayList<FacturasVO> listaAux = new ArrayList<>();
-        for (FacturasVO facturaSeekBar : facturas){
-            if (Double.parseDouble(String.valueOf(facturaSeekBar.getImporteOrdenacion())) < maxImporte){
+        for (FacturasVO facturaSeekBar : facturas) {
+            if (Double.parseDouble(String.valueOf(facturaSeekBar.getImporteOrdenacion())) < maxImporte) {
                 listaAux.add(facturaSeekBar);
             }
         }
@@ -172,24 +171,24 @@ public class MainActivity extends AppCompatActivity {
         Date fechaDesde = new Date();
         Date fechaHasta = new Date();
 
-            try {
-                fechaDesde = sdf.parse(fechaInicio);
-                fechaHasta = sdf.parse(fechaFin);
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
+        try {
+            fechaDesde = sdf.parse(fechaInicio);
+            fechaHasta = sdf.parse(fechaFin);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
 
-            for (FacturasVO facturaFecha: filtroLista) {
-                Date fechaFactura;
-                try {
-                    fechaFactura = sdf.parse(facturaFecha.getFecha());
-                } catch (ParseException e) {
-                    throw new RuntimeException(e);
-                }
-                if (fechaFactura.after(fechaDesde) && fechaFactura.before(fechaHasta)) {
-                    listaAux.add(facturaFecha);
-                }
+        for (FacturasVO facturaFecha : filtroLista) {
+            Date fechaFactura;
+            try {
+                fechaFactura = sdf.parse(facturaFecha.getFecha());
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
             }
+            if (fechaFactura.after(fechaDesde) && fechaFactura.before(fechaHasta)) {
+                listaAux.add(facturaFecha);
+            }
+        }
 
         return listaAux;
     }
