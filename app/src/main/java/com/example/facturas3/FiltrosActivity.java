@@ -25,13 +25,12 @@ import java.util.Calendar;
 import java.util.HashMap;
 
 public class FiltrosActivity extends AppCompatActivity {
-
+    FiltroVO filtros;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_filtros);
-        ArrayList<FacturasVO> listaFactura = pasarListaFacturas();
 
         //boton para cerrar la pagina de filtros y volver a la principal
         MenuHost menu = this;
@@ -53,15 +52,14 @@ public class FiltrosActivity extends AppCompatActivity {
         });
 
         //declarar variables
-        Button botonAplicar=(Button) findViewById(R.id.botonAplicar);
+        Button botonAplicar = (Button) findViewById(R.id.botonAplicar);
         CheckBox checkPagadas = findViewById(R.id.checkPagadas);
         CheckBox checkAnuladas = findViewById(R.id.checkAnuladas);
         CheckBox checkCuota = findViewById(R.id.checkCuota);
         CheckBox checkPendientes = findViewById(R.id.checkPendientes);
         CheckBox checkPlan = findViewById(R.id.checkPlan);
-        Button botonDesde= (Button) findViewById(R.id.fechaDesde);
-        Button botonHasta=(Button) findViewById(R.id.fechaHasta);
-
+        Button botonDesde = (Button) findViewById(R.id.fechaDesde);
+        Button botonHasta = (Button) findViewById(R.id.fechaHasta);
 
 
         //calendarios
@@ -92,7 +90,6 @@ public class FiltrosActivity extends AppCompatActivity {
         });
 
 
-
         //slider
         SeekBar seekBar = findViewById(R.id.seekBar);
         TextView maximo = findViewById(R.id.maximo);
@@ -120,18 +117,30 @@ public class FiltrosActivity extends AppCompatActivity {
             }
         });
 
+        //Hace que los filtros se queden fijos cuando salimos a la pagina principal
+        filtros = new Gson().fromJson(getIntent().getStringExtra(Constantes.FILTRO_DATOS), FiltroVO.class);
+        if (filtros != null) {
+            botonDesde.setText(filtros.getFechaInicio());
+            botonHasta.setText(filtros.getFechaFin());
+            seekBar.setProgress(filtros.getImporteSeleccionado());
+            checkPagadas.setChecked(filtros.getMapaCheckBox().get(Constantes.PAGADAS));
+            checkAnuladas.setChecked(filtros.getMapaCheckBox().get(Constantes.ANULADAS));
+            checkCuota.setChecked(filtros.getMapaCheckBox().get(Constantes.CUOTA_FIJA));
+            checkPendientes.setChecked(filtros.getMapaCheckBox().get(Constantes.PENDIENTES_PAGO));
+            checkPlan.setChecked(filtros.getMapaCheckBox().get(Constantes.PLAN_PAGO));
+        }
         //boton aplicar
         botonAplicar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Gson gson = new Gson();
-                Intent intent=new Intent(FiltrosActivity.this,MainActivity.class);
+                Intent intent = new Intent(FiltrosActivity.this, MainActivity.class);
                 HashMap<String, Boolean> mapaCheckBox = new HashMap<>();
-                mapaCheckBox.put("Pagada", checkPagadas.isChecked());
-                mapaCheckBox.put("Anulada", checkAnuladas.isChecked());
-                mapaCheckBox.put("Cuota Fija", checkCuota.isChecked());
-                mapaCheckBox.put("Pendiente de pago", checkPendientes.isChecked());
-                mapaCheckBox.put("Plan de pago", checkPlan.isChecked());
+                mapaCheckBox.put(Constantes.PAGADAS, checkPagadas.isChecked());
+                mapaCheckBox.put(Constantes.ANULADAS, checkAnuladas.isChecked());
+                mapaCheckBox.put(Constantes.CUOTA_FIJA, checkCuota.isChecked());
+                mapaCheckBox.put(Constantes.PENDIENTES_PAGO, checkPendientes.isChecked());
+                mapaCheckBox.put(Constantes.PLAN_PAGO, checkPlan.isChecked());
 
                 FiltroVO filtroEnviado = new FiltroVO(botonDesde.getText().toString(), botonHasta.getText().toString(),
                         maxImporte, Integer.parseInt(central.getText().toString()), mapaCheckBox);
@@ -163,12 +172,6 @@ public class FiltrosActivity extends AppCompatActivity {
                 checkPlan.setChecked(false);
             }
         });
-    }
-//metodo para pasar la lista
-    private ArrayList<FacturasVO> pasarListaFacturas() {
-        ArrayList<FacturasVO> listaFacturas = getIntent().getParcelableArrayListExtra("facturas");
-        Log.d("tamaño facturas", "" + listaFacturas.size());
-        return listaFacturas;
     }
 
 }

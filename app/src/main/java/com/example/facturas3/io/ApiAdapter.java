@@ -7,21 +7,22 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiAdapter {
     private static FacturasService API_SERVICE;
-    public static FacturasService getApiService(){
+
+    public static FacturasService getApiService() {
         HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
         logging.setLevel(HttpLoggingInterceptor.Level.BODY);
 
-        OkHttpClient.Builder httpClient= new OkHttpClient.Builder();
+        OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
         httpClient.addInterceptor(logging);
 
-        String baseUrl="https://viewnextandroid2.wiremockapi.cloud/";
-        if (API_SERVICE==null){
-            Retrofit retrofit=new Retrofit.Builder()
+        String baseUrl = "https://viewnextandroid2.wiremockapi.cloud/";
+        if (API_SERVICE == null) {
+            Retrofit retrofit = new Retrofit.Builder()
                     .baseUrl(baseUrl)
                     .addConverterFactory(GsonConverterFactory.create())
                     .client(httpClient.build())
                     .build();
-            API_SERVICE=retrofit.create(FacturasService.class);
+            API_SERVICE = retrofit.create(FacturasService.class);
         }
         return API_SERVICE;
     }

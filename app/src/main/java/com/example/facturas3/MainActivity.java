@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<FacturasVO> facturas;
     public static int maxImporte;
     TextView filtroVacio;
+    FiltroVO filtros;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,10 +57,14 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                Gson gson = new Gson();
                 if (menuItem.getItemId() == R.id.botonFiltro) {
                     Intent intent = new Intent(MainActivity.this, FiltrosActivity.class);
-                    intent.putExtra("facturas", facturas);
                     intent.putExtra("maxImporte", maxImporte);
+                    //Hace que los filtros se queden fijos
+                    if (filtros != null) {
+                        intent.putExtra(Constantes.FILTRO_DATOS, gson.toJson(filtros));
+                    }
                     startActivity(intent);
                     return true;
                 } else {
@@ -69,20 +74,21 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
-
+        //Llamamos a la API
         Call<FacturasResponse> call = ApiAdapter.getApiService().getFacturas();
         call.enqueue(new Callback<FacturasResponse>() {
             @Override
             public void onResponse(Call<FacturasResponse> call, Response<FacturasResponse> response) {
+                //Si la respuesta de la API es correcta
                 if (response.isSuccessful()) {
                     Log.d("facturas cargadas", response.body().getFacturas().toString());
 
                     facturas = (ArrayList<FacturasVO>) response.body().getFacturas();
-                    maxImporte = calcularMaximoImporte(facturas);
+                    maxImporte = calcularMaximoImporte();
 
-                    String datosFiltro = getIntent().getStringExtra(Constantes.FILTRO_DATOS);
-                    if (datosFiltro != null) {
-                        facturas = llenarDatos(datosFiltro);
+                    filtros = new Gson().fromJson(getIntent().getStringExtra(Constantes.FILTRO_DATOS), FiltroVO.class);
+                    if (filtros != null) {
+                        facturas = llenarDatos(filtros);
                     }
                     adapter = new FacturasAdapter(facturas);
                     rv1.setAdapter(adapter);
@@ -90,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-
+            //Si la llamada no es correcta
             @Override
             public void onFailure(Call<FacturasResponse> call, Throwable t) {
                 Log.d("onFailure", "Fallo callback de enqueue");//metodo vacio
@@ -98,7 +104,8 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private int calcularMaximoImporte(ArrayList<FacturasVO> listaFactura) {
+    //metodo para calcular el maximo importe
+    private int calcularMaximoImporte() {
         int maxImporte = 0;
 
         for (FacturasVO factura : facturas) {
@@ -110,18 +117,18 @@ public class MainActivity extends AppCompatActivity {
         return maxImporte;
     }
 
-    private ArrayList<FacturasVO> llenarDatos(String datosFiltro) {
-        FiltroVO filtros = new Gson().fromJson(datosFiltro, FiltroVO.class);
+    //Devuelve la lista filtrada
+    private ArrayList<FacturasVO> llenarDatos(FiltroVO filtros) {
         ArrayList<FacturasVO> filtroLista;
 
-
+        //Comprueba el importe
         filtroLista = filtroSeekBar(filtros.getImporteSeleccionado());
+        //Comprueba la fecha
         if (!Objects.equals(filtros.getFechaInicio(), getBaseContext().getResources().getString(R.string.activity_filtros_botonFecha)) ||
                 !Objects.equals(filtros.getFechaFin(), getBaseContext().getResources().getString(R.string.activity_filtros_botonFecha))) {
             filtroLista = filtroFecha(filtros.getFechaInicio(), filtros.getFechaFin(), filtroLista);
         }
-
-
+        //Comprueba las checkBoxs
         boolean estaCheckeado = false;
         for (Map.Entry<String, Boolean> entry : filtros.getMapaCheckBox().entrySet()) {
             if (Boolean.TRUE.equals(entry.getValue())) {
@@ -132,8 +139,8 @@ public class MainActivity extends AppCompatActivity {
         if (estaCheckeado) {
             filtroLista = filtroCheckBox(filtros.getMapaCheckBox(), filtroLista);
         }
+        //En el caso de que no se encuentren ninguna factura que coincida con el filtro dado
         if (filtroLista.isEmpty()) {
-
             filtroVacio.setVisibility(View.VISIBLE);
         }
         return filtroLista;
